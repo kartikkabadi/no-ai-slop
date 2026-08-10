@@ -88,7 +88,7 @@ astCondition:
   - "todo!()"
   - "parseInt($A)"
   - "function $F($A, $B, $C, $D, $E) { $$$ }"
-  - "function $F($A, $B, $C, $D, $E, $$$R) { $$$ }"
+  - "function $F($A, $B, $C, $D, $E, $$$) { $$$ }"
   - "function $F($$$ARGS) { }"
   - "def $F($A, $B, $C, $D, $E):\n    $$$"
   - "def $F($A, $B, $C, $D, $E, $$$R):\n    $$$"
@@ -209,6 +209,6 @@ A trigger fired. Fix the violation, then retry:
 
 ## What triggers cannot see
 
-Check these yourself on the lines you touch: long functions, deep nesting, duplication, unclear data flow, hidden side effects. Keep units focused on one job. Make errors useful: keep the context, hide secrets, and let the caller decide what happens next. Keep the edit minimal. Do not fold unrelated renames or cleanups into the same change.
+Check these yourself on the lines you touch: long functions, deep nesting, duplication, unclear data flow, hidden side effects. Keep units focused on one job. Functions with many parameters: bundle related arguments into one options object. Make errors useful: keep the context, hide secrets, and let the caller decide what happens next. Keep the edit minimal. Do not fold unrelated renames or cleanups into the same change.
 
 If a trigger fires, fix it and retry.

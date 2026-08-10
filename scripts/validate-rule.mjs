@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Validates no-ai-slop rules against test fixtures.
 //
 // Usage: node scripts/validate-rule.mjs [rule-file]
@@ -17,11 +16,11 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const rulePath = process.argv[2]
-  ? path.resolve(process.argv[2])
-  : path.join(root, 'clean-code.md');
-
-// --- frontmatter subset parser ---
+const langByExt = {
+  ts: 'ts', tsx: 'tsx', js: 'js', jsx: 'jsx', mjs: 'js', cjs: 'js',
+  py: 'python', go: 'go', rb: 'ruby', rs: 'rust', java: 'java', kt: 'kotlin',
+  php: 'php', swift: 'swift', c: 'c', h: 'c', cpp: 'cpp', hpp: 'cpp', cs: 'csharp',
+};
 
 function unescapeYaml(s) {
   let out = '';
@@ -37,7 +36,7 @@ function unescapeYaml(s) {
   return out;
 }
 
-function parseFrontmatter(raw) {
+export function parseFrontmatter(raw) {
   const m = raw.match(/^---\n([\s\S]*?)\n---\n/);
   if (!m) throw new Error('no frontmatter found');
   const meta = {};
@@ -64,8 +63,6 @@ function parseFrontmatter(raw) {
   return meta;
 }
 
-// --- regex helpers ---
-
 function compileRegex(src) {
   let flags = '';
   let s = src;
@@ -76,14 +73,6 @@ function compileRegex(src) {
   }
   return new RegExp(s, flags);
 }
-
-// --- ast-grep helpers ---
-
-const langByExt = {
-  ts: 'ts', tsx: 'tsx', js: 'js', jsx: 'jsx', mjs: 'js', cjs: 'js',
-  py: 'python', go: 'go', rb: 'ruby', rs: 'rust', java: 'java', kt: 'kotlin',
-  php: 'php', swift: 'swift', c: 'c', h: 'c', cpp: 'cpp', hpp: 'cpp', cs: 'csharp',
-};
 
 function astGrepMatches(pattern, file) {
   const lang = langByExt[path.extname(file).slice(1)];
@@ -100,30 +89,18 @@ function astGrepMatches(pattern, file) {
   }
 }
 
-// --- main ---
+function listFixtures(dir) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
+    .filter((f) => /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rb|swift)$/.test(f))
+    .sort();
+}
 
-const raw = fs.readFileSync(rulePath, 'utf8');
-const meta = parseFrontmatter(raw);
-
-const regexes = (meta.condition || []).map((src, i) => {
-  try { return { i, rx: compileRegex(src) }; }
-  catch (e) { console.error(`REGEX [${i}] does not compile: ${e.message}\n  ${src}`); process.exitCode = 1; return null; }
-}).filter(Boolean);
-const patterns = meta.astCondition || [];
-
-const badDir = path.join(root, 'tests', 'fixtures', 'bad');
-const goodDir = path.join(root, 'tests', 'fixtures', 'good');
-const list = (d) => fs.existsSync(d)
-  ? fs.readdirSync(d).filter((f) => f.endsWith('.ts') || f.endsWith('.py') || f.endsWith('.go') || f.endsWith('.rb') || f.endsWith('.swift') || f.endsWith('.js')).sort()
-  : [];
-
-let failures = 0;
-
-function fireSources(file) {
+function fireSources(regexes, patterns, file) {
   const content = fs.readFileSync(file, 'utf8');
   const hits = [];
-  for (const { i, rx } of regexes) {
-    if (rx.test(content)) hits.push(`regex[${i}]`);
+  for (let i = 0; i < regexes.length; i++) {
+    if (regexes[i].test(content)) hits.push(`regex[${i}]`);
   }
   for (let i = 0; i < patterns.length; i++) {
     if (astGrepMatches(patterns[i], file)) hits.push(`ast[${i}]`);
@@ -131,27 +108,56 @@ function fireSources(file) {
   return hits;
 }
 
-console.log(`rule: ${path.basename(rulePath)} (${regexes.length} regexes, ${patterns.length} ast patterns)`);
+function main() {
+  const rulePath = process.argv[2]
+    ? path.resolve(process.argv[2])
+    : path.join(root, 'clean-code.md');
+  const raw = fs.readFileSync(rulePath, 'utf8');
+  const meta = parseFrontmatter(raw);
 
-for (const f of list(badDir)) {
-  const hits = fireSources(path.join(badDir, f));
-  if (hits.length === 0) {
-    console.error(`FAIL  bad/${f}: no trigger fired`);
-    failures++;
-  } else {
-    console.log(`ok    bad/${f}: ${hits.join(', ')}`);
+  const regexes = [];
+  (meta.condition || []).forEach((src, i) => {
+    try { regexes.push(compileRegex(src)); }
+    catch (e) {
+      console.error(`REGEX [${i}] does not compile: ${e.message}\n  ${src}`);
+      regexes.push(/a^/); // never matches; keeps indices aligned
+      process.exitCode = 1;
+    }
+  });
+  const patterns = meta.astCondition || [];
+
+  const badDir = path.join(root, 'tests', 'fixtures', 'bad');
+  const goodDir = path.join(root, 'tests', 'fixtures', 'good');
+  const bad = listFixtures(badDir);
+  const good = listFixtures(goodDir);
+  let failures = 0;
+
+  console.log(`rule: ${path.basename(rulePath)} (${regexes.length} regexes, ${patterns.length} ast patterns)`);
+
+  for (const f of bad) {
+    const hits = fireSources(regexes, patterns, path.join(badDir, f));
+    if (hits.length === 0) {
+      console.error(`FAIL  bad/${f}: no trigger fired`);
+      failures++;
+    } else {
+      console.log(`ok    bad/${f}: ${hits.join(', ')}`);
+    }
   }
+
+  for (const f of good) {
+    const hits = fireSources(regexes, patterns, path.join(goodDir, f));
+    if (hits.length > 0) {
+      console.error(`FAIL  good/${f}: fired ${hits.join(', ')}`);
+      failures++;
+    } else {
+      console.log(`ok    good/${f}`);
+    }
+  }
+
+  console.log(failures === 0 ? `PASS (${bad.length} bad, ${good.length} good)` : `FAIL (${failures} problems)`);
+  process.exitCode = failures === 0 ? 0 : 1;
 }
 
-for (const f of list(goodDir)) {
-  const hits = fireSources(path.join(goodDir, f));
-  if (hits.length > 0) {
-    console.error(`FAIL  good/${f}: fired ${hits.join(', ')}`);
-    failures++;
-  } else {
-    console.log(`ok    good/${f}`);
-  }
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
 }
-
-console.log(failures === 0 ? `PASS (${list(badDir).length} bad, ${list(goodDir).length} good)` : `FAIL (${failures} problems)`);
-process.exitCode = failures === 0 ? 0 : 1;
