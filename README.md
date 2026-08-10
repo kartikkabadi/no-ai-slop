@@ -17,6 +17,11 @@ word lists work in any agent harness that supports regex-based output rules.
   (STE-100). Short words, short sentences, one idea per sentence. Like voice,
   it carries trigger patterns and interrupts output that uses long words or
   filler phrases.
+- `clean-code.md` — interrupts code edits that introduce fixable smells:
+  type-unsafe patterns (`any`, `@ts-ignore`, non-null assertions), swallowed
+  errors (empty catches, bare `except:`), bad names, magic numbers, debug
+  leftovers, global state, and comment hygiene. Uses regex triggers plus
+  ast-grep structural patterns, and watches edit/write tool streams only.
 
 ## Install
 
@@ -35,7 +40,11 @@ Each file is Markdown with YAML frontmatter:
 - `description` — one line saying what the rule does
 - `condition` — list of regex patterns. When any pattern matches your
   output, the rule fires.
-- `scope` — what the rule checks (`text`)
+- `astCondition` — list of ast-grep structural patterns (for example
+  `catch ($_) {}`). Matches code being written or edited; the language is
+  inferred from the file path.
+- `scope` — which streams the rule watches. Tokens: `text`, `thinking`,
+  `tool`, and `tool:edit(<glob>)` / `tool:write(<glob>)` for code files.
 - `interruptMode` — `prose-only` means chat prose, not code
 - `alwaysApply` — marks the rule as always active. In OMP, a rule with a
   `condition` is a stream rule: it watches output and interrupts on match so
