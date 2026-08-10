@@ -1,6 +1,6 @@
 ---
 name: voice
-description: Kartik's voice rules. Interrupt output when it uses a banned corporate/AI word or a common AI-tell phrase.
+description: User's voice rules. Interrupt output when it uses a banned corporate/AI word or a common AI-tell phrase.
 condition:
   - "(?i)\\b(leverage[d]?|utilize[d]?|utilise[d]?|initiate[d]?|remediate[d]?|finalize[d]?|seamless(ly)?|holistic(ally)?|actionable|proactive(ly)?|streamline[d]?|paradigm|synerg(y|ies|istic)|bandwidth|stakeholder[s]?|deliverable[s]?|value-add|state-of-the-art|robust(ness)?|cutting-edge|game-chang(er|ing)|unlock[s]?|empower[s]?|delve|tapestry|underscore[s]?|crucial(ly)?|elevate[d]?|foster[s]?|realm of|testament to|best practice[s]?|moving forward|touch base|circle back|drill down|deep dive)\\b"
   - "(?i)(it'?s worth noting|it is (important|worth|vital) to note|in conclusion|let'?s dive in|at the end of the day|navigate the complex|seamlessly integrate|leverag)"
@@ -16,7 +16,7 @@ interruptMode: prose-only
 
 # Voice
 
-Kartik reads every message. Use plain words. Short sentences.
+The user reads every message. Use plain words. Short sentences.
 
 Never use the banned words or AI-tell phrases listed in the frontmatter.
 If the trigger matched, rephrase with the simplest word that means the same thing.
