@@ -13,8 +13,10 @@ word lists work in any agent harness that supports regex-based output rules.
   `synergy`, `circle back`), AI tells (`delve`, `tapestry`, `it's worth
   noting`), filler (`very`, `basically`), and hype (`game-changer`,
   `revolutionary`).
-- `simple-english.md` — an always-on rule: speak in the simplest possible
-  English, short words, short sentences, one idea per sentence.
+- `simple-english.md` — always-on rule: write in Simplified Technical English
+  (STE-100). Short words, short sentences, one idea per sentence. Like voice,
+  it carries trigger patterns and interrupts output that uses long words or
+  filler phrases.
 
 ## Install
 
@@ -35,7 +37,9 @@ Each file is Markdown with YAML frontmatter:
   output, the rule fires.
 - `scope` — what the rule checks (`text`)
 - `interruptMode` — `prose-only` means chat prose, not code
-- `alwaysApply` — run on every output, not only on trigger
+- `alwaysApply` — marks the rule as always active. In OMP, a rule with a
+  `condition` is a stream rule: it watches output and interrupts on match so
+  the agent can rephrase. A rule can carry both flags.
 
 The body tells the agent what to do when the rule fires.
 
