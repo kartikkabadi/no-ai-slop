@@ -26,7 +26,7 @@ word lists work in any agent harness that supports regex-based output rules.
 ## Install
 
 ```sh
-cp voice.md simple-english.md ~/.omp/agent/rules/
+cp voice.md simple-english.md clean-code.md ~/.omp/agent/rules/
 ```
 
 OMP loads every rule file in `~/.omp/agent/rules/`. Rules apply to new
@@ -52,11 +52,22 @@ Each file is Markdown with YAML frontmatter:
 
 The body tells the agent what to do when the rule fires.
 
+## Validate
+
+`node scripts/validate-rule.mjs` runs the rule triggers against fixture
+pairs in `tests/fixtures/`:
+
+- `tests/fixtures/bad/*` — each file must fire at least one trigger
+- `tests/fixtures/good/*` — each file must fire no trigger
+
+Requires Node and the `ast-grep` binary. Run it before sending a rule
+change; the fixtures keep the trigger list honest.
+
 ## Contribute
 
 The word lists are the point. Send a pull request to add a banned word or
 phrase you keep seeing. Keep additions to the right regex line so the list
-stays organized.
+stays organized. Run the validator after any change to a rule file.
 
 ## License
 

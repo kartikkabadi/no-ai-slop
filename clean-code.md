@@ -26,17 +26,15 @@ condition:
   - "\\bprint\\s*\\("
   - "\\bfmt\\.(?:Print|Println|Printf)\\s*\\("
   - "\\bputs\\b"
-  # var
-  - "\\bvar\\s+\\w+\\s*=(?!=)"
   # Names
-  - "\\b(?:function|def|fn|func)\\s+[a-z]\\b"
-  - "\\b(?:function|def|fn|func)\\s+\\w+\\s*\\(\\s*(?!e\\b)[a-z]\\b[^)]*\\)"
-  - "\\b(?:const|let|var)\\s+(?!i\\b|j\\b|k\\b|x\\b|y\\b|e\\b)\\w(?!\\w)\\s*[=;,]"
-  - "(?i)\\b(?:const|let|var|function|def|class)\\s+(?:data|item|tmp|temp|helper|manager|util|utils|handler|stuff|thing|misc|foo|bar|baz|val|value|result|ret|res|flag|obj|str|num|input|output)\\b"
+  - "(?i)\\b(?:const|let|var|function|def|class)\\s+(?:foo|bar|baz|stuff|thing|misc)\\b"
   - "(?i)\\b(?:doStuff|doWork|doThing|handleData|handleThing|processInput|processData|handleInput)\\b"
   # Magic numbers
   - "\\b\\d{2,}\\s*(?:ms|secs?|mins?|hrs?|days?|px|kb|mb|gb|bytes?)\\b"
-  - "(?:===|==|!==|!=|>=|<=|>|<)\\s*\\d{2,}\\b"
+  # Tests and disables
+  - "(?:describe|it|test|context)\\.only\\s*\\("
+  - "eslint-disable(?=\\s|$)"
+  - "!!(?=[A-Za-z_(])"
   # Comment hygiene
   - "(?i)(?://|#|--|/\\*|\\*)\\s*(?:\\b(?:todo|fixme|hack)\\b(?:\\s*[:(-]|(?=\\s*[\\r\\n]|$))|\\bxxx\\b)"
   - "(?i)(?:^|[\\r\\n])\\s*(?://|#|--|/\\*|\\*)\\s*(?:(?:if|for|while|switch|catch|try|except|finally|match|do|else)\\s*[({=\\[:]|else\\s+if\\s*[({])"
@@ -88,6 +86,25 @@ astCondition:
   - "function $F($$$ARGS) { return $A != $B }"
   - "breakpoint()"
   - "todo!()"
+  - "parseInt($A)"
+  - "function $F($A, $B, $C, $D, $E) { $$$ }"
+  - "function $F($A, $B, $C, $D, $E, $$$R) { $$$ }"
+  - "function $F($$$ARGS) { }"
+  - "def $F($A, $B, $C, $D, $E):\n    $$$"
+  - "def $F($A, $B, $C, $D, $E, $$$R):\n    $$$"
+  - "def $F($$$ARGS):\n    pass"
+  - "$A == true"
+  - "$A === true"
+  - "$A != true"
+  - "$A !== true"
+  - "$A == false"
+  - "$A === false"
+  - "$A != false"
+  - "$A !== false"
+  - "$A ? $B : $B"
+  - "if ($A) { $$$BODY } else { $$$BODY }"
+  - "{ $A: $A }"
+  - "try { $$$BODY } catch ($E) { throw $E; }"
 scope:
   - "tool:edit(**/*.ts)"
   - "tool:edit(**/*.tsx)"
@@ -143,12 +160,15 @@ A trigger fired. Fix the violation, then retry:
 - Non-null assertion (`!`): replace with a runtime check that narrows the type or throws a descriptive error. Do not assert what the code has not verified.
 - `debugger`: remove. It stops execution and ships by accident.
 - `console.log` / `console.debug`: remove debug output. If logging is intentional, use the project logger; keep `console.error` and `console.warn` for real failures.
+- `!!`: use `Boolean(x)` or plain truthiness. Double negation hides intent.
+- `parseInt(x)` with one argument: pass the radix (`parseInt(x, 10)`), or use `Number(x)` when the input is already numeric. A missing radix guesses at base 10 and breaks on `0x` or `08`.
 
 ## Errors
 
 - Never swallow an error. An empty catch block, a catch that holds only comments, or an empty `.catch()` handler hides a failure. Every failure needs a decision: handle it, wrap it with context, re-raise it, or return a typed failure. If ignoring a failure is deliberate, log it, say why in a comment, and keep the reason observable.
 - Never use a bare `except:`. Name the exceptions you expect. Do not follow an except clause with `pass` or `...`.
 - Catch the specific exception the call can raise. A bare `catch {}`, `except Exception`, `recover()`, or `rescue Exception` swallows bugs and keeps the program running on broken state.
+- A catch that only rethrows (`catch (e) { throw e; }`) adds nothing. Add context (`throw new WrappedError(e)`) or handle the error.
 
 ## Names
 
@@ -184,6 +204,8 @@ A trigger fired. Fix the violation, then retry:
 - Read each comment against the code below it. If the comment is stale or wrong, fix the comment or fix the code.
 - Remove TODO, FIXME, HACK, and XXX markers. Do the work now, or move the note to the issue tracker. A finished change carries no markers.
 - Remove leftover debug calls: console.log, console.debug, debugger, breakpoint(), todo!().
+- Remove `.only(` from tests (`it.only`, `describe.only`, `test.only`). It skips the rest of the suite and ships by accident.
+- Remove block-level `eslint-disable` comments. Fix the lint error, or keep a line-scoped disable with a reason on the same line.
 
 ## What triggers cannot see
 

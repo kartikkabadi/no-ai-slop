@@ -1,0 +1,1 @@
+try { run(); } catch (e) {}
