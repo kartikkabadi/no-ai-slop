@@ -130,6 +130,15 @@ function main() {
     }
   });
   const patterns = meta.astCondition || [];
+  if (patterns.length) {
+    try {
+      execFileSync('ast-grep', ['--version'], { timeout: 20000, stdio: 'ignore' });
+    } catch {
+      console.error('ERROR: ast-grep is required to validate AST conditions; install it and retry.');
+      process.exitCode = 1;
+      return;
+    }
+  }
 
   const badDir = path.join(root, 'tests', 'fixtures', 'bad');
   const goodDir = path.join(root, 'tests', 'fixtures', 'good');
