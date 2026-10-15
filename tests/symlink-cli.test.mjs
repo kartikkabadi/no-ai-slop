@@ -13,10 +13,15 @@ test('invoking the validator through a symlink actually validates the rule', () 
     symlinkSync(fileURLToPath(new URL('../scripts/validate-rule.mjs', import.meta.url)), link);
     const invalid = join(dir, 'invalid.md');
     writeFileSync(invalid, 'not a rule');
+    const valid = join(dir, 'valid.md');
+    writeFileSync(valid, '---\ncondition:\n  - "a^"\n---\n');
     for (const flags of [[], ['--preserve-symlinks-main']]) {
       const result = spawnSync(process.execPath, [...flags, link, invalid], { encoding: 'utf8' });
       assert.equal(result.status, 1);
       assert.match(result.stderr, /no frontmatter found/);
+      const fixtures = spawnSync(process.execPath, [...flags, link, valid], { encoding: 'utf8' });
+      assert.equal(fixtures.status, 1);
+      assert.match(fixtures.stdout, /FAIL \(34 problems\)/);
     }
   } finally {
     rmSync(dir, { recursive: true, force: true });
