@@ -15,7 +15,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = path.resolve(path.dirname(fs.realpathSync(fileURLToPath(import.meta.url))), '..');
 const langByExt = {
   ts: 'ts', tsx: 'tsx', js: 'js', jsx: 'jsx', mjs: 'js', cjs: 'js',
   py: 'python', go: 'go', rb: 'ruby', rs: 'rust', java: 'java', kt: 'kotlin',
