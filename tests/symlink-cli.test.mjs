@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import test from 'node:test';
+
+test('invoking the validator through a symlink actually validates the rule', () => {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'rule-symlink-')));
+  try {
+    const link = join(dir, 'validator.mjs');
+    symlinkSync(fileURLToPath(new URL('../scripts/validate-rule.mjs', import.meta.url)), link);
+    const invalid = join(dir, 'invalid.md');
+    writeFileSync(invalid, 'not a rule');
+    const result = spawnSync(process.execPath, [link, invalid], { encoding: 'utf8' });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /no frontmatter found/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
