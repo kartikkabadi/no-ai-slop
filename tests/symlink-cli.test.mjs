@@ -13,10 +13,19 @@ test('invoking the validator through a symlink actually validates the rule', () 
     symlinkSync(fileURLToPath(new URL('../scripts/validate-rule.mjs', import.meta.url)), link);
     const invalid = join(dir, 'invalid.md');
     writeFileSync(invalid, 'not a rule');
-    const result = spawnSync(process.execPath, [link, invalid], { encoding: 'utf8' });
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, /no frontmatter found/);
+    for (const flags of [[], ['--preserve-symlinks-main']]) {
+      const result = spawnSync(process.execPath, [...flags, link, invalid], { encoding: 'utf8' });
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /no frontmatter found/);
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('module import tolerates a nonexistent argv entrypoint', () => {
+  const moduleUrl = new URL('../scripts/validate-rule.mjs', import.meta.url).href;
+  const script = "process.argv[1] = '/nonexistent-validator-entry'; await import(" + JSON.stringify(moduleUrl) + ");";
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
 });
