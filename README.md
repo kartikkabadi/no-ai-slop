@@ -54,27 +54,19 @@ The body tells the agent what to do when the rule fires.
 
 ## Validate
 
-`node scripts/validate-rule.mjs` runs the rule triggers against fixture
-pairs in `tests/fixtures/`:
-
-- `tests/fixtures/bad/*` — each file must fire at least one trigger
-- `tests/fixtures/good/*` — each file must fire no trigger
-
-Requires Node and the `ast-grep` binary. Run it before sending a rule
-change; the fixtures keep the trigger list honest.
-
-## Validate
-
 The repo has a test harness for the code rule:
 
 ```sh
 node scripts/validate-rule.mjs
+node --test tests/validator.test.mjs
 ```
 
 It checks `clean-code.md`: every file in `tests/fixtures/bad/` must fire at
 least one trigger, and every file in `tests/fixtures/good/` must fire none.
 It compiles the regex triggers and runs the ast-grep patterns against each
-fixture. Run it before sending a pull request that touches the rules.
+fixture. This fixture check requires Node and the `ast-grep` binary. The
+validator regression tests use only Node. Run both before sending a pull
+request that touches the rules or validator.
 
 ## Contribute
 

@@ -40,6 +40,7 @@ export function parseFrontmatter(raw) {
   const m = raw.match(/^---\n([\s\S]*?)\n---\n/);
   if (!m) throw new Error('no frontmatter found');
   const meta = {};
+  const listSections = new Set();
   let section = null;
   for (const line of m[1].split('\n')) {
     const key = line.match(/^([\w-]+):\s*(.*)$/);
@@ -47,13 +48,15 @@ export function parseFrontmatter(raw) {
       section = key[1];
       const val = key[2].trim();
       meta[section] = val ? [val] : [];
+      if (val) listSections.delete(section);
+      else listSections.add(section);
     } else if (section && /^  - "/.test(line)) {
       const item = line.match(/^  - "(.*)"\s*$/)[1];
       meta[section].push(unescapeYaml(item));
     }
   }
   for (const k of Object.keys(meta)) {
-    if (meta[k].length === 1) {
+    if (!listSections.has(k) && meta[k].length === 1) {
       const v = meta[k][0];
       if (v === 'true') meta[k] = true;
       else if (v === 'false') meta[k] = false;
@@ -115,13 +118,14 @@ function main() {
   const raw = fs.readFileSync(rulePath, 'utf8');
   const meta = parseFrontmatter(raw);
 
+  let failures = 0;
   const regexes = [];
   (meta.condition || []).forEach((src, i) => {
     try { regexes.push(compileRegex(src)); }
     catch (e) {
       console.error(`REGEX [${i}] does not compile: ${e.message}\n  ${src}`);
       regexes.push(/a^/); // never matches; keeps indices aligned
-      process.exitCode = 1;
+      failures++;
     }
   });
   const patterns = meta.astCondition || [];
@@ -130,7 +134,6 @@ function main() {
   const goodDir = path.join(root, 'tests', 'fixtures', 'good');
   const bad = listFixtures(badDir);
   const good = listFixtures(goodDir);
-  let failures = 0;
 
   console.log(`rule: ${path.basename(rulePath)} (${regexes.length} regexes, ${patterns.length} ast patterns)`);
 
@@ -161,3 +164,4 @@ function main() {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main();
 }
+
