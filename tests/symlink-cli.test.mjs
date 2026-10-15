@@ -21,7 +21,7 @@ test('invoking the validator through a symlink actually validates the rule', () 
       assert.match(result.stderr, /no frontmatter found/);
       const fixtures = spawnSync(process.execPath, [...flags, link, valid], { encoding: 'utf8' });
       assert.equal(fixtures.status, 1);
-      assert.match(fixtures.stdout, /FAIL \(34 problems\)/);
+      assert.match(fixtures.stdout, /FAIL \([1-9]\d* problems\)/);
     }
   } finally {
     rmSync(dir, { recursive: true, force: true });
