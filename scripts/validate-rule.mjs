@@ -37,6 +37,7 @@ function unescapeYaml(s) {
 }
 
 export function parseFrontmatter(raw) {
+  raw = raw.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const m = raw.match(/^---\n([\s\S]*?)\n---\n/);
   if (!m) throw new Error('no frontmatter found');
   const meta = {};
